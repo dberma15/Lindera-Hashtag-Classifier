@@ -50,13 +50,13 @@ K.set_image_dim_ordering('th')
 # '''
 
 
-parentdirectory="C:\\Users\\danie\\Documents\\Machine Learning And Statistics Projects\\Lindera HAshtag Classifier"
+parentdirectory="C:\\Users\\bermads1\\Documents\\Daniel\\instagram"
 onDanielsComputer=os.path.isdir(parentdirectory)
 
 if onDanielsComputer:
 	os.chdir(parentdirectory)
-	positivedirectory="wildfoodlove"
-	negativedirectory="local"
+	positivedirectory="flower"
+	negativedirectory="car"
 
 	print('loading in the data')
 	positivevalues=[os.path.join(positivedirectory,x) for x in os.listdir(os.path.join(parentdirectory,positivedirectory))]
@@ -66,17 +66,17 @@ if onDanielsComputer:
 	data=pandas.concat([pandas.DataFrame(neg),pandas.DataFrame(pos)])
 	data=data.sample(frac=1)
 
-	X_training=np.zeros((data.shape[0],3,125,125))
+	X_training=np.zeros((data.shape[0],3,32,32))
 	Y_training=np.zeros((data.shape[0]))
 
 	pbar = progressbar.ProgressBar(maxval=1).start()
 	for file,cl,i in zip(data['files'],data['class'],range(data.shape[0])):
 		image=scipy.misc.imread(file)
-		image=scipy.misc.imresize(image,(125,125,3))
-		image=image/255.0
+		image=scipy.misc.imresize(image,(32,32,3))
+		# image=image/255.0
 		for j in range(image.shape[2]):
 			X_training[i][j]=image[:,:,j]
-		Y_training[i]=cl
+		Y_training[i]=int(cl)
 		pbar.update(i/data.shape[0])
 	pbar.finish()
 	np.save("X_data_wildfoodlovevslocal.npz",X_training)
@@ -94,10 +94,17 @@ y_train=(Y_training[msk])
 x_test=X_training[~msk]
 y_test=(Y_training[~msk])
 
-(x_train, y_train), (x_test, y_test) = cifar10.load_data()
-# is9or6=[(y[0]==6 or y[0]==9) for y in y_train]
-# x_train=x_train[is9or6][:,:,:]
-# y_train=y_train[is9or6]
+(X_train, Y_train), (X_test, Y_test) = cifar10.load_data()
+is9or6=[(y[0]==6 or y[0]==9) for y in Y_train]
+X_train=X_train[is9or6][:,:,:]
+Y_train=Y_train[is9or6]
+Y_train=[int(y==6) for y in Y_train]
+
+
+X_test=X_train[300:400]
+Y_test=Y_train[300:400]
+X_train=X_train[0:300]
+Y_train=Y_train[0:300]
 
 # Create the model
 model=Sequential()
@@ -109,35 +116,36 @@ model.add(Convolution2D(64, 3, 3, activation='relu'))
 model.add(Dropout(0.2))
 model.add(Convolution2D(64, 3, 3, activation='relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Convolution2D(128, 3, 3, activation='relu'))
-model.add(Dropout(0.2))
-model.add(Convolution2D(128, 3, 3, activation='relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
+# model.add(Convolution2D(128, 3, 3, activation='relu'))
+# model.add(Dropout(0.2))
+# model.add(Convolution2D(128, 3, 3, activation='relu'))
+# model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(Flatten())
 model.add(Dropout(0.2))
-model.add(Dense(1024, activation='relu', kernel_constraint=maxnorm(3)))
+model.add(Dense(1024, activation='relu', W_constraint=maxnorm(3)))
 model.add(Dropout(0.2))
-model.add(Dense(512, activation='relu', kernel_constraint=maxnorm(3)))
+model.add(Dense(512, activation='relu', W_constraint=maxnorm(3)))
 model.add(Dropout(0.2))
 model.add(Dense(1, activation='sigmoid'))
 
-epochs = 100
+epochs = 30
 lrate = 0.0001
 decay = 1e-6
 sgd = SGD(lr=lrate, momentum=0.9, decay=decay, nesterov=False)
 print('compiling model')
 model.compile(loss='binary_crossentropy', optimizer=sgd, metrics=['accuracy'])
 
-datagen = ImageDataGenerator(
-    featurewise_center=True,
-    featurewise_std_normalization=True,
-    rotation_range=20,
-    width_shift_range=0.2,
-    height_shift_range=0.2,
-    horizontal_flip=False)
+# datagen = ImageDataGenerator(
+    # featurewise_center=True,
+    # featurewise_std_normalization=True,
+    # rotation_range=20,
+    # width_shift_range=0.2,
+    # height_shift_range=0.2,
+    # horizontal_flip=False)
 	
-print("fitting model")
-model.fit_generator(datagen.flow(x_train, y_train,batch_size=32), samples_per_epoch=len(x_train),  nb_epoch=epochs, validation_data=(x_train,y_train) )
+# print("fitting model")
+# model.fit_generator(datagen.flow(x_train, y_train,batch_size=32), samples_per_epoch=len(x_train),  nb_epoch=epochs, validation_data=(x_train,y_train) )
+model.fit(x_train, y_train,batch_size=32, nb_epoch=epochs, validation_data=(x_test,y_test) )
 
 
 modelsavename="LinderaCNN"
