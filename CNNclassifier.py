@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 '''
 This needs to be done: type activate tensorflow-gpu
 http://www.heatonresearch.com/2017/01/01/tensorflow-windows-gpu.html
@@ -50,37 +49,41 @@ K.set_image_dim_ordering('th')
 # '''
 
 
-parentdirectory="C:\\Users\\daniel\\Documents\\Machine Learning And Statistics Projects\\Lindera HAshtag Classifier"
-os.chdir(parentdirectory)
-positivedirectory="wildfoodlove"
-negativedirectory="gym"
-positivevalues=[os.path.join(positivedirectory,x) for x in os.listdir(os.path.join(parentdirectory,positivedirectory))]
-negativevalues=[os.path.join(negativedirectory,x) for x in os.listdir(os.path.join(parentdirectory,negativedirectory))]
-neg={"files": pandas.Series(negativevalues), "class": pandas.Series(np.zeros(len(negativevalues)))}
-pos={"files": pandas.Series(positivevalues), "class": pandas.Series(np.ones(len(positivevalues)))}
-data=pandas.concat([pandas.DataFrame(neg),pandas.DataFrame(pos)])
-data=data.sample(frac=1)
+parentdirectory="C:\\Users\\danie\\Documents\\Machine Learning And Statistics Projects\\Lindera HAshtag Classifier"
+onDanielsComputer=os.path.isdir(parentdirectory)
 
-X_training=np.zeros((data.shape[0],3,125,125))
-Y_training=np.zeros((data.shape[0]))
+if onDanielsComputer:
+	os.chdir(parentdirectory)
+	positivedirectory="wildfoodlove"
+	negativedirectory="gym"
 
-pbar = progressbar.ProgressBar(maxval=1).start()
-for file,cl,i in zip(data['files'],data['class'],range(data.shape[0])):
-	image=scipy.misc.imread(file)
-	image=scipy.misc.imresize(image,(125,125,3))
+	print('loading in the data')
+	positivevalues=[os.path.join(positivedirectory,x) for x in os.listdir(os.path.join(parentdirectory,positivedirectory))]
+	negativevalues=[os.path.join(negativedirectory,x) for x in os.listdir(os.path.join(parentdirectory,negativedirectory))]
+	neg={"files": pandas.Series(negativevalues), "class": pandas.Series(np.zeros(len(negativevalues)))}
+	pos={"files": pandas.Series(positivevalues), "class": pandas.Series(np.ones(len(positivevalues)))}
+	data=pandas.concat([pandas.DataFrame(neg),pandas.DataFrame(pos)])
+	data=data.sample(frac=1)
 
-	image=image/255.0
-	for j in range(image.shape[2]):
-		X_training[i][j]=image[:,:,j]
-	Y_training[i]=cl
-	pbar.update(i/data.shape[0])
-pbar.finish()
-# np.save("X_training_wildfoodlove_rawscaledsmallshort.npz",X_training)
-# np.save("Y_training_wildfoodlove_rawscaledsmallshort.npz",Y_training)
+	X_training=np.zeros((data.shape[0],3,125,125))
+	Y_training=np.zeros((data.shape[0]))
 
-# print("loading data")
-# X_training=np.load("X_training_wildfoodlove_rawscaledsmallshort.npz.npy")
-# Y_training=np.load("Y_training_wildfoodlove_rawscaledsmallshort.npz.npy")
+	pbar = progressbar.ProgressBar(maxval=1).start()
+	for file,cl,i in zip(data['files'],data['class'],range(data.shape[0])):
+		image=scipy.misc.imread(file)
+		image=scipy.misc.imresize(image,(125,125,3))
+		image=image/255.0
+		for j in range(image.shape[2]):
+			X_training[i][j]=image[:,:,j]
+		Y_training[i]=cl
+		pbar.update(i/data.shape[0])
+	pbar.finish()
+#	np.save("X_data_wildfoodlovevsgym.npz",X_training)
+#	np.save("Y_data_wildfoodlovegym.npz",Y_training)
+else:
+	print("loading data")
+	X_training=np.load("X_data_wildfoodlovevsgym.npz.npy")
+	Y_training=np.load("Y_data_wildfoodlovegym.npz.npy")
 
 print("Create test and training sets")
 msk=np.random.rand(len(X_training))<.75
@@ -91,27 +94,26 @@ x_test=X_training[~msk]
 y_test=(Y_training[~msk])
 
 print("building model")
-
 # Create the model
 model = Sequential()
 model.add(Convolution2D(4, 3,3, input_shape=(3, 125, 125), activation='relu', bias=True, W_constraint=maxnorm(3)))
 model.add(Dropout(0.2))
 model.add(Convolution2D(16, 3, 3, activation='relu', bias=True, W_constraint=maxnorm(3)))
 model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Convolution2D(32, 3, 3, activation='relu', bias=True, W_constraint=maxnorm(3)))
+model.add(Convolution2D(32, 3, 3, activation='relu'))
+model.add(Dropout(0.2))
+model.add(Convolution2D(64, 3, 3, activation='relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Convolution2D(128, 3, 3, activation='relu', bias=True, W_constraint=maxnorm(3)))
 model.add(Dropout(0.2))
 model.add(Convolution2D(64, 3, 3, activation='relu', bias=True, W_constraint=maxnorm(3)))
 model.add(MaxPooling2D(pool_size=(2, 2)))
-# model.add(Convolution2D(128, 3, 3, activation='relu', bias=True, W_constraint=maxnorm(3)))
-# model.add(Dropout(0.2))
-# model.add(Convolution2D(128, 3, 3, activation='relu', bias=True, W_constraint=maxnorm(3)))
-# model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(Flatten())
-model.add(Dense(512, activation='relu',bias=True,W_constraint=maxnorm(3)))
+model.add(Dense(512, activation='relu'))
 model.add(Dropout(0.5))
-model.add(Dense(1, activation='sigmoid', bias=True))
+model.add(Dense(1, activation='sigmoid'))
 
-epochs = 25
+epochs = 5
 lrate = 0.0001
 decay = 1e-6
 sgd = SGD(lr=lrate, momentum=0.9, decay=decay, nesterov=False)
@@ -119,7 +121,7 @@ print('compiling model')
 model.compile(loss='binary_crossentropy', optimizer=sgd, metrics=['accuracy'])
 
 print("fitting model")
-model.fit(x_train, y_train, validation_data=(x_test, y_test), nb_epoch=epochs, batch_size=125)
+model.fit(x_train, y_train, validation_data=(x_train, y_train), nb_epoch=epochs, batch_size=125)
 
 
 modelsavename="LinderaCNN"
@@ -141,99 +143,3 @@ comparison=pandas.DataFrame(comparison)
 comparison.to_csv(modelsavename+st+"predictions.csv")
 print(comparison)
 #print(BinaryConfusionMatrix(comparison['actual'],comparison['predicted']))
-=======
-import datetime
-import dicom
-from keras import backend as K
-from keras import backend as K
-from keras.constraints import maxnorm
-from keras.datasets import cifar10
-from keras.layers import Activation
-from keras.layers import Dense
-from keras.layers import Dropout
-from keras.layers import Embedding
-from keras.layers import Flatten
-from keras.layers import GRU
-from keras.layers import LSTM
-from keras.layers import Permute
-from keras.layers import Reshape
-from keras.layers import SimpleRNN
-from keras.layers.convolutional import Convolution2D
-from keras.layers.convolutional import MaxPooling1D
-from keras.layers.convolutional import MaxPooling2D
-from keras.layers.convolutional import ZeroPadding2D
-from keras.models import load_model
-from keras.models import Sequential
-from keras.optimizers import SGD
-from keras.utils import np_utils
-from matplotlib import pyplot, cm
-import numpy as np
-import os
-import pandas
-import pickle
-import progressbar
-import scipy.misc
-from scipy.misc import toimage
-import time
-import tensorflow
-K.set_image_dim_ordering('th')
-
-'''
-Parameters the user can set:
-'''
-parentdirectory="C:\\Users\\bermads1\\Pictures"
-negdir="apt"
-posdir="physics"
-os.chdir(parentdirectory)
-posfiles=[os.path.join(posdir,x) for x in os.listdir(os.path.join(os.getcwd(),posdir))]
-negfiles=[os.path.join(negdir,x) for x in os.listdir(os.path.join(os.getcwd(),negdir))]
-posdict=pandas.DataFrame({"filename":posfiles,"class":1})
-negdict=pandas.DataFrame({"filename":negfiles,"class":0})
-allfiles=pandas.concat([posdict,negdict])
-allfiles=allfiles.sample(frac=1)
-
-
-X_data=np.zeros((allfiles.shape[0],3,100,100))
-Y_data=np.zeros((allfiles.shape[0]))
-pbar = progressbar.ProgressBar(maxval=1).start()
-for direc,cl,i in zip(allfiles['filename'],allfiles['class'],range(allfiles.shape[0])):
-	image=scipy.misc.imread(direc)
-	image=scipy.misc.imresize(image,(100,100))
-	image=image/255.0
-	for j in range(image.shape[2]):
-		X_data[i][j]=image[:,:,j]
-	Y_data[i]=cl
-	
-	pbar.update(i/allfiles.shape[0])
-pbar.finish()
-
-model = Sequential()
-model.add(Convolution2D(32, 3, 3, input_shape=(3,100, 100), activation='relu', bias=True, W_constraint=maxnorm(3)))
-model.add(Dropout(0.2))
-model.add(Convolution2D(32, 3, 3, activation='relu', bias=True, W_constraint=maxnorm(3)))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Convolution2D(64, 3, 3, activation='relu', bias=True, W_constraint=maxnorm(3)))
-model.add(Dropout(0.2))
-model.add(Convolution2D(64, 3, 3, activation='relu', bias=True, W_constraint=maxnorm(3)))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Convolution2D(128, 3, 3, activation='relu', bias=True, W_constraint=maxnorm(3)))
-model.add(Dropout(0.2))
-model.add(Convolution2D(128, 3, 3, activation='relu', bias=True, W_constraint=maxnorm(3)))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Flatten())
-model.add(Dropout(0.2))
-model.add(Dense(1024, activation='relu'))
-model.add(Dropout(0.2))
-model.add(Dense(512, activation='relu'))
-model.add(Dropout(0.2))
-model.add(Dense(1, activation='sigmoid'))
-# Compile model
-epochs = 25
-lrate = 0.01
-decay = lrate/epochs
-sgd = SGD(lr=lrate, momentum=0.9, decay=decay, nesterov=False)
-model.compile(loss='binary_crossentropy', optimizer=sgd, metrics=['accuracy'])
-
-model.fit(X_data, Y_data, nb_epoch=epochs)
-
->>>>>>> origin/master
