@@ -25,6 +25,7 @@ from keras.models import load_model
 from keras.models import Sequential
 from keras.optimizers import SGD
 from keras.utils import np_utils
+from keras.preprocessing.image import ImageDataGenerator
 from matplotlib import pyplot, cm
 import numpy as np
 import os
@@ -49,13 +50,13 @@ K.set_image_dim_ordering('th')
 # '''
 
 
-parentdirectory="C:\\Users\\danie\\Documents\\Machine Learning And Statistics Projects\\Lindera HAshtag Classifier"
+parentdirectory="C:\\Users\\daniel\\Documents\\Machine Learning And Statistics Projects\\Lindera HAshtag Classifier"
 onDanielsComputer=os.path.isdir(parentdirectory)
 
 if onDanielsComputer:
 	os.chdir(parentdirectory)
 	positivedirectory="wildfoodlove"
-	negativedirectory="gym"
+	negativedirectory="local"
 
 	print('loading in the data')
 	positivevalues=[os.path.join(positivedirectory,x) for x in os.listdir(os.path.join(parentdirectory,positivedirectory))]
@@ -78,8 +79,8 @@ if onDanielsComputer:
 		Y_training[i]=cl
 		pbar.update(i/data.shape[0])
 	pbar.finish()
-#	np.save("X_data_wildfoodlovevsgym.npz",X_training)
-#	np.save("Y_data_wildfoodlovegym.npz",Y_training)
+	np.save("X_data_wildfoodlovevslocal.npz",X_training)
+	np.save("Y_data_wildfoodlovevslocal.npz",Y_training)
 else:
 	print("loading data")
 	X_training=np.load("X_data_wildfoodlovevsgym.npz.npy")
@@ -97,31 +98,39 @@ print("building model")
 # Create the model
 model = Sequential()
 model.add(Convolution2D(4, 3,3, input_shape=(3, 125, 125), activation='relu', bias=True, W_constraint=maxnorm(3)))
-model.add(Dropout(0.2))
+#model.add(Dropout(0.2))
 model.add(Convolution2D(16, 3, 3, activation='relu', bias=True, W_constraint=maxnorm(3)))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(Convolution2D(32, 3, 3, activation='relu'))
-model.add(Dropout(0.2))
+#model.add(Dropout(0.2))
 model.add(Convolution2D(64, 3, 3, activation='relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(Convolution2D(128, 3, 3, activation='relu', bias=True, W_constraint=maxnorm(3)))
-model.add(Dropout(0.2))
+#model.add(Dropout(0.2))
 model.add(Convolution2D(64, 3, 3, activation='relu', bias=True, W_constraint=maxnorm(3)))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(Flatten())
 model.add(Dense(512, activation='relu'))
-model.add(Dropout(0.5))
+#model.add(Dropout(0.5))
 model.add(Dense(1, activation='sigmoid'))
 
-epochs = 5
+epochs = 100
 lrate = 0.0001
 decay = 1e-6
 sgd = SGD(lr=lrate, momentum=0.9, decay=decay, nesterov=False)
 print('compiling model')
 model.compile(loss='binary_crossentropy', optimizer=sgd, metrics=['accuracy'])
 
+datagen = ImageDataGenerator(
+    featurewise_center=True,
+    featurewise_std_normalization=True,
+    rotation_range=20,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    horizontal_flip=False)
+	
 print("fitting model")
-model.fit(x_train, y_train, validation_data=(x_train, y_train), nb_epoch=epochs, batch_size=125)
+model.fit_generator(datagen.flow(x_train, y_train,batch_size=32), samples_per_epoch=len(x_train),  nb_epoch=epochs, validation_data=(x_train,y_train) )
 
 
 modelsavename="LinderaCNN"
