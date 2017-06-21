@@ -50,7 +50,7 @@ K.set_image_dim_ordering('th')
 # '''
 
 
-parentdirectory="C:\\Users\\daniel\\Documents\\Machine Learning And Statistics Projects\\Lindera HAshtag Classifier"
+parentdirectory="C:\\Users\\danie\\Documents\\Machine Learning And Statistics Projects\\Lindera HAshtag Classifier"
 onDanielsComputer=os.path.isdir(parentdirectory)
 
 if onDanielsComputer:
@@ -94,24 +94,31 @@ y_train=(Y_training[msk])
 x_test=X_training[~msk]
 y_test=(Y_training[~msk])
 
-print("building model")
+(x_train, y_train), (x_test, y_test) = cifar10.load_data()
+# is9or6=[(y[0]==6 or y[0]==9) for y in y_train]
+# x_train=x_train[is9or6][:,:,:]
+# y_train=y_train[is9or6]
+
 # Create the model
-model = Sequential()
-model.add(Convolution2D(4, 3,3, input_shape=(3, 125, 125), activation='relu', bias=True, W_constraint=maxnorm(3)))
-#model.add(Dropout(0.2))
-model.add(Convolution2D(16, 3, 3, activation='relu', bias=True, W_constraint=maxnorm(3)))
-model.add(MaxPooling2D(pool_size=(2, 2)))
+model=Sequential()
+model.add(Convolution2D(32, 3, 3, input_shape=(3, 32, 32), activation='relu'))
+model.add(Dropout(0.2))
 model.add(Convolution2D(32, 3, 3, activation='relu'))
-#model.add(Dropout(0.2))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Convolution2D(64, 3, 3, activation='relu'))
+model.add(Dropout(0.2))
 model.add(Convolution2D(64, 3, 3, activation='relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Convolution2D(128, 3, 3, activation='relu', bias=True, W_constraint=maxnorm(3)))
-#model.add(Dropout(0.2))
-model.add(Convolution2D(64, 3, 3, activation='relu', bias=True, W_constraint=maxnorm(3)))
+model.add(Convolution2D(128, 3, 3, activation='relu'))
+model.add(Dropout(0.2))
+model.add(Convolution2D(128, 3, 3, activation='relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(Flatten())
-model.add(Dense(512, activation='relu'))
-#model.add(Dropout(0.5))
+model.add(Dropout(0.2))
+model.add(Dense(1024, activation='relu', kernel_constraint=maxnorm(3)))
+model.add(Dropout(0.2))
+model.add(Dense(512, activation='relu', kernel_constraint=maxnorm(3)))
+model.add(Dropout(0.2))
 model.add(Dense(1, activation='sigmoid'))
 
 epochs = 100
