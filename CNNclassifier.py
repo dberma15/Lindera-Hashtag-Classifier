@@ -57,7 +57,6 @@ if onDanielsComputer:
 	os.chdir(parentdirectory)
 	positivedirectory="wildfoodlove"
 	negativedirectory="gym"
-	
 	print('loading in the data')
 	positivevalues=[os.path.join(positivedirectory,x) for x in os.listdir(os.path.join(parentdirectory,positivedirectory))]
 	negativevalues=[os.path.join(negativedirectory,x) for x in os.listdir(os.path.join(parentdirectory,negativedirectory))]
